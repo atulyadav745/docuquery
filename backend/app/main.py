@@ -9,6 +9,9 @@ import os
 app = FastAPI()
 
 # CORS settings
+origins = [
+    "https://aiplanet-ten.vercel.app/",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

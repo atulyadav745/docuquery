@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+transformers
+torch  # or tensorflow
+PyMuPDF
+SQLAlchemy
+pydantic

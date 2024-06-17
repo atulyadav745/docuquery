@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+let baseURL;
+if (process.env.NODE_ENV === 'development') {
+    baseURL = 'http://localhost:8000'; 
+} else {
+    baseURL = 'https://aiplanet-ten.vercel.app/'; 
+}
+
 const api = axios.create({
-    baseURL: 'http://localhost:8000',
+    baseURL: baseURL,
 });
 
 export const uploadPDF = (formData) => {

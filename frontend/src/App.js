@@ -1,0 +1,17 @@
+import React, { useState } from 'react';
+import FileUpload from './components/FileUpload';
+import QuestionAnswer from './components/QuestionAnswer';
+
+function App() {
+    const [pdf, setPdf] = useState(null);
+
+    return (
+        <div>
+            <h1>PDF Q&A Application</h1>
+            <FileUpload onUpload={setPdf} />
+            {pdf && <QuestionAnswer pdf={pdf} />}
+        </div>
+    );
+}
+
+export default App;

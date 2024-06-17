@@ -3,5 +3,6 @@ uvicorn
 transformers
 torch  # or tensorflow
 PyMuPDF
+pypdf  # Corrected package name
 SQLAlchemy
 pydantic

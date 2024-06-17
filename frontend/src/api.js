@@ -4,7 +4,7 @@ let baseURL;
 if (process.env.NODE_ENV === 'development') {
     baseURL = 'http://localhost:8000'; 
 } else {
-    baseURL = 'https://aiplanet-ten.vercel.app/'; 
+    baseURL = 'https://aiplanet-3in4.onrender.com'; 
 }
 
 const api = axios.create({

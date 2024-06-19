@@ -10,11 +10,11 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port 80 to allow incoming traffic
-EXPOSE 80
+# Make port 8000 available to the world outside this container
+EXPOSE 8000
 
 # Define environment variable
-ENV PORT 80
+ENV PORT 8000
 
-# Start FastAPI using uvicorn with dynamic port binding
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+# Run app.py when the container launches
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -7,7 +7,6 @@ function App() {
 
     return (
         <div>
-            <h1>PDF Q&A Application</h1>
             <FileUpload onUpload={setPdf} />
             {pdf && <QuestionAnswer pdf={pdf} />}
         </div>

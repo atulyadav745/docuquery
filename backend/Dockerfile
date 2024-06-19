@@ -17,4 +17,4 @@ EXPOSE 80
 ENV PORT 80
 
 # Start FastAPI using uvicorn with dynamic port binding
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]

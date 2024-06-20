@@ -136,6 +136,7 @@ This project is a full-stack application that allows users to upload PDF documen
   - **400**: Error, returns error details.
 
 ## Application Architecture
+You can view Application Architecture [here](https://drive.google.com/file/d/1hIdGTj55QqRZbadh7jA8XIANSJcjlZXg/view?usp=sharing).
 
 ### Backend
 
@@ -162,7 +163,7 @@ This project is a full-stack application that allows users to upload PDF documen
 
 You can view a live demo [here](https://aiplanet-ten.vercel.app/).
 
-Alternatively, watch a screencast [here](https://drive.google.com/file/d/1hIdGTj55QqRZbadh7jA8XIANSJcjlZXg/view?usp=sharing).
+Alternatively, watch a screencast [here](https://drive.google.com/file/d/1AEbNJiZBQFbklivikyQZTO2M_4J6seuI/view?usp=sharing).
 
 ---
 

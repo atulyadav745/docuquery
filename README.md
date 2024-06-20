@@ -160,9 +160,9 @@ This project is a full-stack application that allows users to upload PDF documen
 
 ## Demo
 
-You can view a live demo [here](https://aiplanet-ten.vercel.app/)).
+You can view a live demo [here](https://aiplanet-ten.vercel.app/).
 
-Alternatively, watch a screencast [here](http://your-screencast-url.com](https://drive.google.com/file/d/1hIdGTj55QqRZbadh7jA8XIANSJcjlZXg/view?usp=sharing)).
+Alternatively, watch a screencast [here](https://drive.google.com/file/d/1hIdGTj55QqRZbadh7jA8XIANSJcjlZXg/view?usp=sharing).
 
 ---
 

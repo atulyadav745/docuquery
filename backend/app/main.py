@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Body
 from sqlalchemy.orm import Session
 from . import models, schemas, crud, database, utils
 from transformers import pipeline
@@ -10,17 +9,17 @@ app = FastAPI()
 
 # CORS settings
 origins = [
-    "https://aiplanet-ten.vercel.app/",
+    "https://aiplanet-ten.vercel.app",  # Replace with your actual frontend URL
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Dependency
+# Dependency for database session
 def get_db():
     db = database.SessionLocal()
     try:
@@ -28,11 +27,11 @@ def get_db():
     finally:
         db.close()
 
-# Create directories
+# Create directories if not existing
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-# Question-Answering pipeline
+# Initialize QA pipeline
 qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
 
 @app.post("/upload/", response_model=schemas.PDFDocument)

@@ -9,7 +9,7 @@ app = FastAPI()
 
 # CORS settings
 origins = [
-    "https://aiplanet-ten.vercel.app",  # Replace with your actual frontend URL
+    "http://localhost:3000",  # frontend URL
 ]
 app.add_middleware(
     CORSMiddleware,

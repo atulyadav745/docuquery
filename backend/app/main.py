@@ -10,7 +10,10 @@ app = FastAPI()
 async def read_root():
     return {"message": "Welcome to the API!"}
 # CORS settings
-origins = []
+origins = [
+    "http://localhost:3000",
+    "https://pdf-chatbot2.netlify.app"
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

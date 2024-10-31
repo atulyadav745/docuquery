@@ -56,7 +56,7 @@ function FileUpload({ onUpload }) {
     <>
       <nav className="navbar bg-body-tertiary">
         <div className="container-fluid">
-          <a className="navbar-brand" href="#">
+          <a className="navbar-brand" href="/">
             <img
               src="/logo.svg"
               alt="AI Planet"

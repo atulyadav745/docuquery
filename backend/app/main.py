@@ -6,11 +6,11 @@ from transformers import pipeline
 import os
 
 app = FastAPI()
-
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the API!"}
 # CORS settings
-origins = [
-    "http://localhost:3000",  # frontend URL
-]
+origins = []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

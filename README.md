@@ -30,8 +30,8 @@ This project is a full-stack application that allows users to upload PDF documen
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/atulyadav745/aiplanet.git
-    cd aiplanet/backend
+    git clone https://github.com/atulyadav745/pdf-chatbot.git
+    cd pdf-chatbot/backend
     ```
 
 2. Create and activate a virtual environment:

@@ -11,8 +11,8 @@ async def read_root():
     return {"message": "Welcome to the API!"}
 # CORS settings
 origins = [
-    "http://localhost:3000",
-    "https://pdf-chatbot2.netlify.app"
+    "http://localhost:3000",  # Your frontend URL
+    "https://pdf-chatbot2.netlify.app",  # Your production site
 ]
 app.add_middleware(
     CORSMiddleware,

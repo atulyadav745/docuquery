@@ -5,4 +5,5 @@ torch  # or tensorflow
 PyMuPDF
 pypdf  # Corrected package name
 SQLAlchemy
+python-multipart
 pydantic

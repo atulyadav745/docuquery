@@ -59,9 +59,9 @@ function FileUpload({ onUpload }) {
           <a className="navbar-brand" href="/">
             <img
               src="/logo.svg"
-              alt="AI Planet"
+              alt="DocuQuery"
               width="100"
-              height="50"
+              height="100"
             />
           </a>
 

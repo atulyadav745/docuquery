@@ -30,8 +30,8 @@ This project is a full-stack application that allows users to upload PDF documen
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/atulyadav745/pdf-chatbot.git
-    cd pdf-chatbot/backend
+    git clone https://github.com/atulyadav745/docuquery.git
+    cd docuquery/backend
     ```
 
 2. Create and activate a virtual environment:
@@ -82,6 +82,8 @@ This project is a full-stack application that allows users to upload PDF documen
 
     ```sh
     uvicorn main:app --reload
+    <!-- uvicorn app.main:app --reload -->
+
     ```
 
 ### Frontend Configuration

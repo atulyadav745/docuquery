@@ -1,9 +1,9 @@
 fastapi
 uvicorn
 transformers
-torch  # or tensorflow
-PyMuPDF
 pypdf  # Corrected package name
 SQLAlchemy
-python-multipart
 pydantic
+google-cloud-storage
+torch  # or tensorflow
+python-multipart

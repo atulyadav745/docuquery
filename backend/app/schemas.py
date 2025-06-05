@@ -3,6 +3,7 @@ from typing import Optional
 
 class PDFDocumentBase(BaseModel):
     filename: str
+    file_url: Optional[str] = None
 
 class QuestionRequest(BaseModel):
     pdf_id: int

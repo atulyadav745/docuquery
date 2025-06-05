@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// const baseURL = process.env.BASE_URL || 'https://pdf-chatbot-6jte.onrender.com';
-const baseURL = process.env.BASE_URL ||'http://127.0.0.1:8000' ;
+const baseURL = process.env.BASE_URL || 'https://pdf-chatbot-6jte.onrender.com';
+// const baseURL = process.env.BASE_URL ||'http://127.0.0.1:8000' ;
 
 // let baseURL;
 // if (process.env.NODE_ENV === 'development') {

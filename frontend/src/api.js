@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-let baseURL;
-if (process.env.NODE_ENV === 'development') {
-    baseURL = 'http://127.0.0.1:8000'; 
-} else {
-    baseURL = process.env.BACKEND_URL; 
-}
+const baseURL = process.env.BASE_URL || 'https://pdf-chatbot-6jte.onrender.com';
+// let baseURL;
+// if (process.env.NODE_ENV === 'development') {
+//     baseURL = 'http://127.0.0.1:8000'; 
+// } else {
+//     baseURL = process.env.BACKEND_URL; 
+// }
 const api = axios.create({
     baseURL: baseURL,
 });

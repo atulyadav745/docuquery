@@ -3,15 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from . import models, schemas, crud, database, utils
 from .utils import upload_to_gcs
-from transformers import pipeline
-from dotenv import load_dotenv
 import os
 import logging
 import json
 import tempfile
+import numpy as np
+import torch
 
-# Load environment variables
-load_dotenv()
+# Configure numpy to use OpenBLAS
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -64,8 +64,25 @@ def get_db():
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-# Initialize QA pipeline
-qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+# Initialize QA pipeline with specific device placement
+try:
+    # Import here to avoid early torch initialization issues
+    from transformers import pipeline
+    
+    # Check if CUDA is available and set device accordingly
+    device = 0 if torch.cuda.is_available() else -1
+    
+    # Initialize the pipeline with explicit device placement
+    qa_pipeline = pipeline(
+        "question-answering", 
+        model="deepset/roberta-base-squad2",
+        device=device,
+        model_kwargs={"low_cpu_mem_usage": True}
+    )
+    logger.info(f"Successfully initialized QA pipeline on device: {device}")
+except Exception as e:
+    logger.error(f"Error initializing QA pipeline: {str(e)}")
+    raise
 
 # @app.post("/upload/", response_model=schemas.PDFDocument)
 # async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -149,9 +166,25 @@ def read_pdf(pdf_id: int, db: Session = Depends(get_db)):
 
 @app.post("/question/")
 def ask_question(question_request: schemas.QuestionRequest, db: Session = Depends(get_db)):
-    db_pdf = crud.get_pdf_document(db, pdf_id=question_request.pdf_id)
-    if db_pdf is None:
-        raise HTTPException(status_code=404, detail="PDF not found")
-    
-    answer = qa_pipeline(question=question_request.question, context=db_pdf.text_content)
-    return {"question": question_request.question, "answer": answer["answer"]}
+    try:
+        db_pdf = crud.get_pdf_document(db, pdf_id=question_request.pdf_id)
+        if db_pdf is None:
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        # Handle potential memory issues with large texts
+        max_length = 384  # Maximum context length for RoBERTa
+        context = db_pdf.text_content[:max_length * 10]  # Limit context size
+        
+        answer = qa_pipeline(
+            question=question_request.question, 
+            context=context,
+            max_answer_len=50  # Limit answer length
+        )
+        return {
+            "question": question_request.question, 
+            "answer": answer["answer"],
+            "confidence": round(float(answer["score"]), 4)
+        }
+    except Exception as e:
+        logger.error(f"Error processing question: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
@@ -23,5 +23,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 from .models import Base
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Create tables only if they don't exist
+inspector = inspect(engine)
+if not inspector.has_table("pdf_documents"):
+    Base.metadata.create_all(bind=engine)

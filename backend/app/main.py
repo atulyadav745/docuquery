@@ -83,13 +83,14 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
     try:
         logger.debug(f"Starting upload for file: {file.filename}")
         file_data = await file.read()
-        
+
         # Create uploads directory if it doesn't exist
         os.makedirs("uploads", exist_ok=True)
         
         # First save locally and extract text
         local_path = f"uploads/{file.filename}"
         logger.debug(f"Saving file locally to: {local_path}")
+        
         with open(local_path, "wb") as f:
             f.write(file_data)
         
@@ -101,14 +102,18 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
             raise HTTPException(status_code=500, detail=f"Failed to extract text from PDF: {str(e)}")
         
         # Try uploading to GCS
+        gcs_url = None
         try:
             logger.debug("Attempting to upload to GCS")
-            gcs_url = upload_to_gcs(GCS_BUCKET_NAME, file.filename, file_data)
-            logger.debug(f"Successfully uploaded to GCS, URL: {gcs_url}")
+            if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+                logger.warning("GCS credentials not found. Skipping GCS upload.")
+            else:
+                gcs_url = upload_to_gcs(GCS_BUCKET_NAME, file.filename, file_data)
+                logger.debug(f"Successfully uploaded to GCS, URL: {gcs_url}")
         except Exception as e:
             logger.error(f"GCS upload error: {str(e)}")
-            # Continue with local file if GCS fails
-            gcs_url = None
+            logger.warning("Continuing without GCS upload. File will be stored locally only.")
+            # Don't raise an exception, continue with local file
             
         # Create database entry
         try:

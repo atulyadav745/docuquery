@@ -81,8 +81,7 @@ This project is a full-stack application that allows users to upload PDF documen
 3. **Run the Backend**:
 
     ```sh
-    uvicorn main:app --reload
-    <!-- uvicorn app.main:app --reload -->
+    uvicorn app.main:app --reload
 
     ```
 
@@ -145,8 +144,8 @@ You can view Application Architecture [here](https://drive.google.com/file/d/1hI
 - **Framework**: FastAPI
 - **NLP**: LangChain for processing questions and generating answers.
 - **PDF Processing**: PyMuPDF for extracting text from PDFs.
-- **Data Management**: SQLite/PostgreSQL for metadata storage.
-- **File Storage**: Local filesystem or AWS S3 for PDF storage.
+- **Data Management**: PostgreSQL for metadata storage.
+- **File Storage**: Google Cloud Bucket for PDF storage.
 
 ### Frontend
 

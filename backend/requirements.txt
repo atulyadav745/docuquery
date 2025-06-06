@@ -1,9 +1,10 @@
-fastapi
-uvicorn
-transformers
-pypdf  # Corrected package name
-SQLAlchemy
-pydantic
-google-cloud-storage
-torch  # or tensorflow
-python-multipart
+fastapi==0.109.2
+uvicorn==0.27.1
+python-dotenv==1.0.1
+sqlalchemy==2.0.27
+transformers==4.37.2
+google-cloud-storage==2.14.0
+python-multipart==0.0.6
+pydantic==2.6.1
+PyPDF2==3.0.1
+torch==2.2.0

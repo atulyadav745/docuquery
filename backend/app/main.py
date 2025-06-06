@@ -4,12 +4,19 @@ from sqlalchemy.orm import Session
 from . import models, schemas, crud, database, utils
 from .utils import upload_to_gcs
 from transformers import pipeline
+from dotenv import load_dotenv
 import os
 import logging
+
+# Load environment variables
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Get port from environment variable or use default
+PORT = int(os.getenv("PORT", 8000))
 
 GCS_BUCKET_NAME = "docuquery-atul-uploads" 
 

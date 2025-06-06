@@ -7,6 +7,8 @@ from transformers import pipeline
 from dotenv import load_dotenv
 import os
 import logging
+import json
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -17,6 +19,19 @@ logger = logging.getLogger(__name__)
 
 # Get port from environment variable or use default
 PORT = int(os.getenv("PORT", 8000))
+
+# Handle GCS credentials
+GCS_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
+if GCS_CREDENTIALS:
+    # We're in production, create a temporary credentials file
+    try:
+        creds_dict = json.loads(GCS_CREDENTIALS)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as creds_file:
+            json.dump(creds_dict, creds_file)
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_file.name
+        logger.info("Successfully set up GCS credentials from environment variable")
+    except Exception as e:
+        logger.error(f"Error setting up GCS credentials: {str(e)}")
 
 GCS_BUCKET_NAME = "docuquery-atul-uploads" 
 

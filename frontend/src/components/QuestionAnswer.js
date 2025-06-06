@@ -4,6 +4,7 @@ import { askQuestion } from "../api";
 function QuestionAnswer({ pdf }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleQuestionChange = (e) => {
     setQuestion(e.target.value);
@@ -15,6 +16,7 @@ function QuestionAnswer({ pdf }) {
     }
 
     try {
+      setIsLoading(true); // Start loading
       const response = await askQuestion({
         pdf_id: pdf.id,
         question: question,
@@ -28,6 +30,8 @@ function QuestionAnswer({ pdf }) {
       setQuestion(""); // Clear the input field after sending the question
     } catch (error) {
       console.error("Question error:", error);
+    } finally {
+      setIsLoading(false); // Stop loading regardless of success/failure
     }
   };
 
@@ -43,6 +47,14 @@ function QuestionAnswer({ pdf }) {
             <p><strong>Answer:</strong> {msg.answer}</p>
           </div>
         ))}
+        {isLoading && (
+          <div className="d-flex justify-content-center align-items-center mt-3">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <span className="ms-2">Processing your question...</span>
+          </div>
+        )}
       </div>
       
       <div className="input-group position-fixed bottom-0 mb-4 w-50">
@@ -52,10 +64,15 @@ function QuestionAnswer({ pdf }) {
           placeholder="Send a message..."
           value={question}
           onChange={handleQuestionChange}
+          disabled={isLoading}
         />
         <div className="input-group-append">
-          <button className="btn btn-outline-secondary" onClick={handleAskQuestion}>
-            Send
+          <button 
+            className="btn btn-outline-secondary" 
+            onClick={handleAskQuestion}
+            disabled={isLoading}
+          >
+            {isLoading ? "Processing..." : "Send"}
           </button>
         </div>
       </div>

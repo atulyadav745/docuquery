@@ -20,3 +20,4 @@ pydantic
 nltk>=3.6.3
 bitsandbytes>=0.41.0  # For 8-bit quantization
 accelerate>=0.20.0    # For device mapping
+numpy>=1.24.0  # Added for transformers pipeline dependency

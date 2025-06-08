@@ -8,6 +8,7 @@ import logging
 import json
 import tempfile
 import torch
+import gc
 
 # Set up logging first
 logging.basicConfig(level=logging.DEBUG)
@@ -72,28 +73,41 @@ if not os.path.exists("uploads"):
 
 # Initialize QA pipeline with specific device placement and memory optimizations
 try:
+    # Clean up memory before loading model
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
     # Import here to avoid early torch initialization issues
     from transformers import AutoModelForQuestionAnswering, AutoTokenizer, pipeline
     import torch
+    from transformers import BitsAndBytesConfig
 
     # Set memory optimizations
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    
+    # Configure 8-bit quantization
+    quantization_config = BitsAndBytesConfig(
+        load_in_8bit=True,
+        llm_int8_enable_fp32_cpu_offload=True
+    )
 
     # Load model with memory optimizations
     model_name = "deepset/roberta-base-squad2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    
+    # Load model with 8-bit quantization
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_name,
+        quantization_config=quantization_config,
         low_cpu_mem_usage=True,
         torch_dtype=torch.float32,
+        device_map='auto'
     )
 
-    # Free up memory
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    # Clean up memory after loading
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
     # Initialize pipeline with optimizations
     qa_pipeline = pipeline(
@@ -102,7 +116,12 @@ try:
         tokenizer=tokenizer,
         device=-1,  # Force CPU
     )
-    logger.info("Successfully initialized QA pipeline on CPU with memory optimizations")
+    
+    # Final memory cleanup
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    
+    logger.info("Successfully initialized QA pipeline with 8-bit quantization")
 except Exception as e:
     logger.error(f"Error initializing QA pipeline: {str(e)}")
     raise

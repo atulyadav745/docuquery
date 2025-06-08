@@ -7,15 +7,22 @@ import os
 import logging
 import json
 import tempfile
-import numpy as np
-import torch
 
-# Configure numpy to use OpenBLAS
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
-# Set up logging
+# Set up logging first
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Import and configure numpy
+try:
+    import numpy as np
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    np.show_config()  # This will help debug numpy configuration
+    logger.info("Successfully initialized numpy")
+except Exception as e:
+    logger.error(f"Error initializing numpy: {str(e)}")
+    raise RuntimeError(f"Failed to initialize numpy: {str(e)}")
+
+import torch
 
 # Get port from environment variable or use default
 PORT = int(os.getenv("PORT", 8000))
@@ -68,21 +75,51 @@ if not os.path.exists("uploads"):
 try:
     # Import here to avoid early torch initialization issues
     from transformers import pipeline
+    import torch
+    
+    # Set up torch for better memory management
+    torch.backends.cudnn.benchmark = True
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     
     # Check if CUDA is available and set device accordingly
     device = 0 if torch.cuda.is_available() else -1
+    logger.info(f"Using device: {'CUDA' if device == 0 else 'CPU'}")
     
-    # Initialize the pipeline with explicit device placement
+    # Initialize the pipeline with explicit device placement and optimizations
     qa_pipeline = pipeline(
         "question-answering", 
         model="deepset/roberta-base-squad2",
         device=device,
-        model_kwargs={"low_cpu_mem_usage": True}
+        model_kwargs={
+            "low_cpu_mem_usage": True,
+            "torch_dtype": torch.float32,  # Use float32 for better compatibility
+        }
     )
     logger.info(f"Successfully initialized QA pipeline on device: {device}")
+except ImportError as e:
+    logger.error(f"Failed to import required modules: {str(e)}")
+    raise RuntimeError(f"Missing required modules: {str(e)}")
+except RuntimeError as e:
+    logger.error(f"CUDA error during QA pipeline initialization: {str(e)}")
+    logger.info("Falling back to CPU...")
+    try:
+        qa_pipeline = pipeline(
+            "question-answering", 
+            model="deepset/roberta-base-squad2",
+            device=-1,
+            model_kwargs={
+                "low_cpu_mem_usage": True,
+                "torch_dtype": torch.float32,
+            }
+        )
+        logger.info("Successfully initialized QA pipeline on CPU")
+    except Exception as cpu_error:
+        logger.error(f"Failed to initialize QA pipeline on CPU: {str(cpu_error)}")
+        raise RuntimeError(f"Could not initialize QA pipeline: {str(cpu_error)}")
 except Exception as e:
     logger.error(f"Error initializing QA pipeline: {str(e)}")
-    raise
+    raise RuntimeError(f"Failed to initialize QA pipeline: {str(e)}")
 
 # @app.post("/upload/", response_model=schemas.PDFDocument)
 # async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -167,24 +204,48 @@ def read_pdf(pdf_id: int, db: Session = Depends(get_db)):
 @app.post("/question/")
 def ask_question(question_request: schemas.QuestionRequest, db: Session = Depends(get_db)):
     try:
+        logger.debug(f"Processing question request: {question_request}")
+        
+        # Get PDF document
         db_pdf = crud.get_pdf_document(db, pdf_id=question_request.pdf_id)
         if db_pdf is None:
+            logger.error(f"PDF with id {question_request.pdf_id} not found")
             raise HTTPException(status_code=404, detail="PDF not found")
+        
+        # Validate text content
+        if not db_pdf.text_content or len(db_pdf.text_content.strip()) == 0:
+            logger.error(f"PDF {question_request.pdf_id} has no text content")
+            raise HTTPException(status_code=400, detail="PDF has no text content to answer questions from")
         
         # Handle potential memory issues with large texts
         max_length = 384  # Maximum context length for RoBERTa
         context = db_pdf.text_content[:max_length * 10]  # Limit context size
+        logger.debug(f"Using context of length {len(context)} characters")
         
-        answer = qa_pipeline(
-            question=question_request.question, 
-            context=context,
-            max_answer_len=50  # Limit answer length
-        )
-        return {
-            "question": question_request.question, 
-            "answer": answer["answer"],
-            "confidence": round(float(answer["score"]), 4)
-        }
+        try:
+            # Ensure question is not empty
+            if not question_request.question or len(question_request.question.strip()) == 0:
+                raise HTTPException(status_code=400, detail="Question cannot be empty")
+                
+            logger.debug("Calling QA pipeline")
+            answer = qa_pipeline(
+                question=question_request.question, 
+                context=context,
+                max_answer_len=50  # Limit answer length
+            )
+            logger.debug(f"Got answer: {answer}")
+            
+            return {
+                "question": question_request.question, 
+                "answer": answer["answer"],
+                "confidence": round(float(answer["score"]), 4)
+            }
+        except Exception as qa_error:
+            logger.error(f"Error in QA pipeline: {str(qa_error)}")
+            raise HTTPException(status_code=500, detail=f"Error processing question: {str(qa_error)}")
+            
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as is
     except Exception as e:
-        logger.error(f"Error processing question: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in ask_question: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")

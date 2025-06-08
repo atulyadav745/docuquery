@@ -7,6 +7,7 @@ import os
 import logging
 import json
 import tempfile
+import torch
 
 # Set up logging first
 logging.basicConfig(level=logging.DEBUG)
@@ -22,10 +23,8 @@ except Exception as e:
     logger.error(f"Error initializing numpy: {str(e)}")
     raise RuntimeError(f"Failed to initialize numpy: {str(e)}")
 
-import torch
-
 # Get port from environment variable or use default
-PORT = int(os.getenv("PORT", 8000))
+PORT = int(os.getenv("PORT", 10000))
 
 # Handle GCS credentials
 GCS_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
@@ -71,22 +70,39 @@ def get_db():
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-# Initialize QA pipeline with specific device placement
+# Initialize QA pipeline with specific device placement and memory optimizations
 try:
     # Import here to avoid early torch initialization issues
-    from transformers import pipeline
-    
-    # Check if CUDA is available and set device accordingly
-    device = 0 if torch.cuda.is_available() else -1
-    
-    # Initialize the pipeline with explicit device placement
-    qa_pipeline = pipeline(
-        "question-answering", 
-        model="deepset/roberta-base-squad2",
-        device=device,
-        model_kwargs={"low_cpu_mem_usage": True}
+    from transformers import AutoModelForQuestionAnswering, AutoTokenizer, pipeline
+    import torch
+
+    # Set memory optimizations
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # Load model with memory optimizations
+    model_name = "deepset/roberta-base-squad2"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForQuestionAnswering.from_pretrained(
+        model_name,
+        low_cpu_mem_usage=True,
+        torch_dtype=torch.float32,
     )
-    logger.info(f"Successfully initialized QA pipeline on device: {device}")
+
+    # Free up memory
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # Initialize pipeline with optimizations
+    qa_pipeline = pipeline(
+        "question-answering",
+        model=model,
+        tokenizer=tokenizer,
+        device=-1,  # Force CPU
+    )
+    logger.info("Successfully initialized QA pipeline on CPU with memory optimizations")
 except Exception as e:
     logger.error(f"Error initializing QA pipeline: {str(e)}")
     raise

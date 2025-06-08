@@ -80,33 +80,25 @@ try:
     # Import here to avoid early torch initialization issues
     from transformers import AutoModelForQuestionAnswering, AutoTokenizer, pipeline
     import torch
-    from transformers import BitsAndBytesConfig
 
     # Set memory optimizations
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     
-    # Configure 8-bit quantization
-    quantization_config = BitsAndBytesConfig(
-        load_in_8bit=True,
-        llm_int8_enable_fp32_cpu_offload=True
-    )
-
     # Load model with memory optimizations
     model_name = "deepset/roberta-base-squad2"
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     
-    # Load model with 8-bit quantization
+    # Load model with memory optimizations
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_name,
-        quantization_config=quantization_config,
         low_cpu_mem_usage=True,
         torch_dtype=torch.float32,
-        device_map='auto'
+        use_safetensors=True,  # More memory efficient model loading
     )
 
-    # Clean up memory after loading
-    gc.collect()
+    # Move model to CPU and clear GPU memory
+    model = model.cpu()
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
     # Initialize pipeline with optimizations
@@ -117,11 +109,15 @@ try:
         device=-1,  # Force CPU
     )
     
+    # Delete model and tokenizer after pipeline creation
+    del model
+    del tokenizer
+    
     # Final memory cleanup
     gc.collect()
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
     
-    logger.info("Successfully initialized QA pipeline with 8-bit quantization")
+    logger.info("Successfully initialized QA pipeline with memory optimizations")
 except Exception as e:
     logger.error(f"Error initializing QA pipeline: {str(e)}")
     raise
@@ -215,13 +211,20 @@ def ask_question(question_request: schemas.QuestionRequest, db: Session = Depend
         
         # Handle potential memory issues with large texts
         max_length = 384  # Maximum context length for RoBERTa
-        context = db_pdf.text_content[:max_length * 10]  # Limit context size
+        context = db_pdf.text_content[:max_length * 5]  # Reduced context size
+        
+        # Clear memory before inference
+        gc.collect()
         
         answer = qa_pipeline(
             question=question_request.question, 
             context=context,
             max_answer_len=50  # Limit answer length
         )
+        
+        # Clear memory after inference
+        gc.collect()
+        
         return {
             "question": question_request.question, 
             "answer": answer["answer"],

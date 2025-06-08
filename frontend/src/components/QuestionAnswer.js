@@ -5,33 +5,56 @@ function QuestionAnswer({ pdf }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleQuestionChange = (e) => {
     setQuestion(e.target.value);
+    setError(null); // Clear any previous errors when user starts typing
   };
 
   const handleAskQuestion = async () => {
     if (question.trim() === "") {
-      return; // Do not send if the question is empty
+      setError("Please enter a question");
+      return;
     }
 
     try {
-      setIsLoading(true); // Start loading
+      setIsLoading(true);
+      setError(null);
       const response = await askQuestion({
         pdf_id: pdf.id,
         question: question,
       });
       
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { question: question, answer: response.data.answer }
-      ]);
-
-      setQuestion(""); // Clear the input field after sending the question
+      if (response.data && response.data.answer) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { 
+            question: question, 
+            answer: response.data.answer,
+            confidence: response.data.confidence 
+          }
+        ]);
+        setQuestion("");
+      } else {
+        throw new Error("Invalid response format from server");
+      }
     } catch (error) {
       console.error("Question error:", error);
+      setError(
+        error.response?.data?.detail || 
+        error.message || 
+        "An error occurred while processing your question. Please try again."
+      );
     } finally {
-      setIsLoading(false); // Stop loading regardless of success/failure
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAskQuestion();
     }
   };
 
@@ -42,11 +65,19 @@ function QuestionAnswer({ pdf }) {
     >
       <div className="mb-4">
         {messages.map((msg, index) => (
-          <div key={index} className="alert alert-light border">
+          <div key={index} className="alert alert-light border mb-3">
             <p><strong>Question:</strong> {msg.question}</p>
             <p><strong>Answer:</strong> {msg.answer}</p>
+            {msg.confidence && (
+              <p className="text-muted"><small>Confidence: {(msg.confidence * 100).toFixed(1)}%</small></p>
+            )}
           </div>
         ))}
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
         {isLoading && (
           <div className="d-flex justify-content-center align-items-center mt-3">
             <div className="spinner-border text-primary" role="status">
@@ -61,18 +92,19 @@ function QuestionAnswer({ pdf }) {
         <input
           type="text"
           className="form-control"
-          placeholder="Send a message..."
+          placeholder="Ask a question about the PDF..."
           value={question}
           onChange={handleQuestionChange}
+          onKeyPress={handleKeyPress}
           disabled={isLoading}
         />
         <div className="input-group-append">
           <button 
-            className="btn btn-outline-secondary" 
+            className="btn btn-primary" 
             onClick={handleAskQuestion}
-            disabled={isLoading}
+            disabled={isLoading || !question.trim()}
           >
-            {isLoading ? "Processing..." : "Send"}
+            {isLoading ? "Processing..." : "Ask"}
           </button>
         </div>
       </div>

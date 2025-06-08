@@ -9,7 +9,7 @@ function QuestionAnswer({ pdf }) {
 
   const handleQuestionChange = (e) => {
     setQuestion(e.target.value);
-    setError(null);
+    setError(null); // Clear any previous errors when user starts typing
   };
 
   const handleAskQuestion = async () => {
@@ -29,12 +29,10 @@ function QuestionAnswer({ pdf }) {
       if (response.data && response.data.answer) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          {
-            question: question,
+          { 
+            question: question, 
             answer: response.data.answer,
-            confidence: response.data.confidence,
-            hasAnswer: response.data.has_answer,
-            timestamp: new Date().toLocaleTimeString()
+            confidence: response.data.confidence 
           }
         ]);
         setQuestion("");
@@ -44,8 +42,8 @@ function QuestionAnswer({ pdf }) {
     } catch (error) {
       console.error("Question error:", error);
       setError(
-        error.response?.data?.detail ||
-        error.message ||
+        error.response?.data?.detail || 
+        error.message || 
         "An error occurred while processing your question. Please try again."
       );
     } finally {
@@ -60,29 +58,19 @@ function QuestionAnswer({ pdf }) {
     }
   };
 
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 0.8) return "text-success";
-    if (confidence >= 0.5) return "text-warning";
-    return "text-danger";
-  };
-
   return (
-    <div className="flex flex-col flex-1 p-4 mt-4 mx-auto" style={{ width: "100%", maxWidth: "800px" }}>
-      <div className="mb-4 overflow-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+    <div
+      className="flex flex-col flex-1 p-4 mt-4 mx-auto"
+      style={{ minWidth: "50%", maxWidth: "50%", width: "100%" }}
+    >
+      <div className="mb-4">
         {messages.map((msg, index) => (
-          <div key={index} className={`alert ${msg.hasAnswer ? 'alert-light' : 'alert-warning'} border mb-3`}>
-            <div className="d-flex justify-content-between align-items-start">
-              <div className="flex-grow-1">
-                <p className="fw-bold mb-2">Q: {msg.question}</p>
-                <p className="mb-2">A: {msg.answer}</p>
-                <div className="d-flex align-items-center mt-2">
-                  <small className={`${getConfidenceColor(msg.confidence)} me-2`}>
-                    Confidence: {(msg.confidence * 100).toFixed(1)}%
-                  </small>
-                  <small className="text-muted">{msg.timestamp}</small>
-                </div>
-              </div>
-            </div>
+          <div key={index} className="alert alert-light border mb-3">
+            <p><strong>Question:</strong> {msg.question}</p>
+            <p><strong>Answer:</strong> {msg.answer}</p>
+            {msg.confidence && (
+              <p className="text-muted"><small>Confidence: {(msg.confidence * 100).toFixed(1)}%</small></p>
+            )}
           </div>
         ))}
         {error && (
@@ -100,7 +88,7 @@ function QuestionAnswer({ pdf }) {
         )}
       </div>
       
-      <div className="input-group sticky-bottom bg-white p-3 border-top">
+      <div className="input-group position-fixed bottom-0 mb-4 w-50">
         <input
           type="text"
           className="form-control"
@@ -110,20 +98,15 @@ function QuestionAnswer({ pdf }) {
           onKeyPress={handleKeyPress}
           disabled={isLoading}
         />
-        <button 
-          className={`btn ${isLoading ? 'btn-secondary' : 'btn-primary'}`}
-          onClick={handleAskQuestion}
-          disabled={isLoading || !question.trim()}
-        >
-          {isLoading ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Processing...
-            </>
-          ) : (
-            'Ask'
-          )}
-        </button>
+        <div className="input-group-append">
+          <button 
+            className="btn btn-primary" 
+            onClick={handleAskQuestion}
+            disabled={isLoading || !question.trim()}
+          >
+            {isLoading ? "Processing..." : "Ask"}
+          </button>
+        </div>
       </div>
     </div>
   );

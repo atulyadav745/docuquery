@@ -7,25 +7,18 @@ import os
 import logging
 import json
 import tempfile
+import numpy as np
 import torch
-import gc
 
-# Set up logging first
+# Configure numpy to use OpenBLAS
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
+# Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Import and configure numpy
-try:
-    import numpy as np
-    os.environ["OPENBLAS_NUM_THREADS"] = "1"
-    np.show_config()  # This will help debug numpy configuration
-    logger.info("Successfully initialized numpy")
-except Exception as e:
-    logger.error(f"Error initializing numpy: {str(e)}")
-    raise RuntimeError(f"Failed to initialize numpy: {str(e)}")
-
 # Get port from environment variable or use default
-PORT = int(os.getenv("PORT", 10000))
+PORT = int(os.getenv("PORT", 8000))
 
 # Handle GCS credentials
 GCS_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
@@ -71,53 +64,22 @@ def get_db():
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-# Initialize QA pipeline with specific device placement and memory optimizations
+# Initialize QA pipeline with specific device placement
 try:
-    # Clean up memory before loading model
-    gc.collect()
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
-
     # Import here to avoid early torch initialization issues
-    from transformers import AutoModelForQuestionAnswering, AutoTokenizer, pipeline
-    import torch
-
-    # Set memory optimizations
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    from transformers import pipeline
     
-    # Load model with memory optimizations
-    model_name = "deepset/roberta-base-squad2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    # Check if CUDA is available and set device accordingly
+    device = 0 if torch.cuda.is_available() else -1
     
-    # Load model with memory optimizations
-    model = AutoModelForQuestionAnswering.from_pretrained(
-        model_name,
-        low_cpu_mem_usage=True,
-        torch_dtype=torch.float32,
-        use_safetensors=True,  # More memory efficient model loading
-    )
-
-    # Move model to CPU and clear GPU memory
-    model = model.cpu()
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
-
-    # Initialize pipeline with optimizations
+    # Initialize the pipeline with explicit device placement
     qa_pipeline = pipeline(
-        "question-answering",
-        model=model,
-        tokenizer=tokenizer,
-        device=-1,  # Force CPU
+        "question-answering", 
+        model="deepset/roberta-base-squad2",
+        device=device,
+        model_kwargs={"low_cpu_mem_usage": True}
     )
-    
-    # Delete model and tokenizer after pipeline creation
-    del model
-    del tokenizer
-    
-    # Final memory cleanup
-    gc.collect()
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
-    
-    logger.info("Successfully initialized QA pipeline with memory optimizations")
+    logger.info(f"Successfully initialized QA pipeline on device: {device}")
 except Exception as e:
     logger.error(f"Error initializing QA pipeline: {str(e)}")
     raise
@@ -211,20 +173,13 @@ def ask_question(question_request: schemas.QuestionRequest, db: Session = Depend
         
         # Handle potential memory issues with large texts
         max_length = 384  # Maximum context length for RoBERTa
-        context = db_pdf.text_content[:max_length * 5]  # Reduced context size
-        
-        # Clear memory before inference
-        gc.collect()
+        context = db_pdf.text_content[:max_length * 10]  # Limit context size
         
         answer = qa_pipeline(
             question=question_request.question, 
             context=context,
             max_answer_len=50  # Limit answer length
         )
-        
-        # Clear memory after inference
-        gc.collect()
-        
         return {
             "question": question_request.question, 
             "answer": answer["answer"],
@@ -233,3 +188,4 @@ def ask_question(question_request: schemas.QuestionRequest, db: Session = Depend
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
